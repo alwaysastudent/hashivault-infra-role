@@ -1,0 +1,99 @@
+---
+dependency:
+  name: galaxy
+  enabled: False
+driver:
+  name: docker
+lint: |
+    yamllint . --config-file molecule/yaml-lint.yml
+platforms:
+- name: vault_infra
+  hostname: vault_infra
+  image: ${VAULT_IMAGE}
+  command: server
+  exposed_ports:
+  - "8200"
+  published_ports:
+  - "0.0.0.0:8200:8200"
+  env:
+    http_proxy: "${http_proxy}"
+    https_proxy: "${https_proxy}"
+    no_proxy: "localhost,127.0.0.1,vault_infra,vault_k8s,172.,192.168."
+    VAULT_LOCAL_CONFIG: |-
+      {
+        "backend": {
+          "file": {
+            "path": "/vault/file"
+          }
+        },
+        "default_lease_ttl": "1h",
+        "max_lease_ttl": "1h",
+        "listener": {
+          "tcp": {
+            "address": "0.0.0.0:8200",
+            "tls_disable": 1
+          }
+        },
+        "ui": false
+      }
+  privileged: True
+  pre_build_image: True
+  networks:
+  - name: vault
+- name: vault_k8s
+  hostname: vault_k8s
+  exposed_ports:
+  - "8200"
+  published_ports:
+  - "0.0.0.0:8201:8200"
+  env:
+    http_proxy: "${http_proxy}"
+    https_proxy: "${https_proxy}"
+    no_proxy: "localhost,127.0.0.1,vault_infra,vault_k8s,172.,192.168."
+  image: ${VAULT_IMAGE}
+  command: |
+    sh -c 'while sleep 1; do \
+      [ -f /config.hcl ] && /usr/local/bin/docker-entrypoint.sh server -config=/config.hcl; \
+      printf "%s Waiting for config.hcl\n" date; \
+    done'
+  privileged: True
+  pre_build_image: True
+  networks:
+  - name: vault
+provisioner:
+  name: ansible
+  lint:
+    name: ansible-lint
+  playbooks:
+    converge: playbook.yml
+    prepare: prepare.yml
+  inventory:
+    host_vars:
+      vault_infra:
+      vault_k8s:
+scenario:
+  name: default
+  create_sequence:
+  - create
+  - prepare
+  converge_sequence:
+  - create
+  - prepare
+  - converge
+  - side_effect
+  test_sequence:
+  - lint
+  - destroy
+  - syntax
+  - create
+  - prepare
+  - converge
+  - idempotence
+  - side_effect
+  - verify
+  - cleanup
+  - destroy
+verifier:
+  name: testinfra
+  lint:
+    name: flake8

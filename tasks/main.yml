@@ -1,0 +1,20 @@
+---
+- name: "Prepare tasks"
+  environment:
+    VAULT_TOKEN: "{{ vault_root_token }}"
+  block:
+  - name: "Include prepare tasks"
+    include_tasks: prepare.yml
+
+- name: "Ensure admin token is used"
+  assert:
+    that:
+    - vault_admin_token is defined
+    - vault_admin_token != vault_root_token
+
+- name: "Configure tasks"
+  environment:
+    VAULT_TOKEN: "{{ vault_admin_token }}"
+  block:
+  - name: "Include configure tasks"
+    include_tasks: configure.yml

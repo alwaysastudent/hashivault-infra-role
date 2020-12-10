@@ -1,0 +1,53 @@
+---
+- name: Prepare
+  hosts: all
+  gather_facts: False
+  environment:
+    VAULT_ADDR: http://127.0.0.1:8200
+  tasks:
+  - name: "Ensure packages (apk)"
+    raw: apk --no-cache add python3 sudo
+
+  - name: "Ensure packages (pip)"
+    pip:
+      name: hvac
+
+  - name: "Ensure vault facts directory"
+    file:
+      state: directory
+      path: /etc/ansible/facts.d
+
+- name: Prepare
+  hosts: vault_infra
+  gather_facts: False
+  environment:
+    VAULT_ADDR: http://127.0.0.1:8200
+  tasks:
+  - name: "Read ansible status"
+    hashivault_status:
+    register: hashivault_status
+
+  - name: "Ensure vault is initialized"
+    hashivault_init:
+    register: hashivault_init
+    when: not hashivault_status.status.initialized
+
+  - name: "Ensure vault secrets fact"
+    template:
+      src: secrets.fact.j2
+      dest: /etc/ansible/facts.d/secrets.fact
+    vars:
+      vault_init_keys: "{{ hashivault_init.keys_base64 }}"
+    when: hashivault_init.changed
+
+  - name: "Read local facts"
+    setup:
+      filter: ansible_local
+
+  - name: "Ensure vault is unsealed"
+    hashivault_unseal:
+      keys: "{{ item }}"
+    register: hashivault_status
+    loop: "{{ ansible_facts['ansible_local']['secrets']['vault_init_keys'] }}"
+    when: hashivault_status.status.sealed
+    no_log: True

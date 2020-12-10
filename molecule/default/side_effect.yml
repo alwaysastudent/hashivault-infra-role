@@ -1,0 +1,61 @@
+---
+- name: Unseal vault_k8s
+  hosts: vault_k8s
+  become: True
+  gather_facts: False
+  environment:
+    VAULT_ADDR: http://127.0.0.1:8200
+
+  tasks:
+  - name: "autounseal(vault_infra): Read vault token"
+    delegate_to: vault_infra
+    environment:
+      VAULT_USER: svccps2npo
+      VAULT_PASSWORD: password
+    block:
+    - name: "autounseal(vault_infra): Read vault token"
+      command: |
+        vault login -method=userpass -token-only \
+          username="${VAULT_USER}" \
+          password="${VAULT_PASSWORD}"
+      register: hv_vault_token
+
+  - name: "autounseal(vault_infra): Ensure unseal token"
+    delegate_to: vault_infra
+    environment:
+      VAULT_TOKEN: "{{ hv_vault_token.stdout }}"
+    block:
+    - name: "autounseal(vault_infra): Ensure unseal token"
+      hashivault_token_create:
+        display_name: cps2npo
+        policies: cps2npo
+        ttl: 5m
+      register: hv_token
+
+  - name: "autounseal(vault_k8s): Ensure config"
+    vars:
+      autounseal_token: "{{ hv_token.token.auth.client_token }}"
+      autounseal_name: "cps2npo"
+    template:
+      dest: /config.hcl
+      src: config.hcl.j2
+
+  - name: "autounseal(vault_k8s): Read ansible status"
+    hashivault_status:
+    register: hashivault_status
+    until: hashivault_status.status.initialized is defined
+
+  - name: "autounseal(vault_k8s): Ensure vault is initialized"
+    hashivault_init:
+      recovery_shares: "1"
+      recovery_threshold: "1"
+    register: hashivault_init
+    when: not hashivault_status.status.initialized
+
+  - name: "autounseal(vault_k8s): Ensure vault secrets fact"
+    template:
+      src: secrets.fact.j2
+      dest: /etc/ansible/facts.d/secrets.fact
+    vars:
+      vault_init_keys: "{{ hashivault_init.recovery_keys_base64 }}"
+    when: hashivault_init.changed

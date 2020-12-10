@@ -1,0 +1,27 @@
+---
+molecule:
+  stage: test
+  tags:
+    - docker
+  variables:
+    VAULT_IMAGE: vault:1.5.4
+    MOLECULE_IMAGE: registry.kvk.nl/ams-ansible/molecule:stable
+  before_script:
+    - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN registry.kvk.nl
+  script:
+    - |
+      : "molecule test"
+      echo "Pulling docker images ..."
+      docker pull "${VAULT_IMAGE}" >/dev/null
+      docker pull "${MOLECULE_IMAGE}" >/dev/null
+      docker network create vault
+      docker container run \
+        --rm \
+        --tty \
+        --network vault \
+        --volume /var/run/docker.sock:/var/run/docker.sock \
+        --volume "$(pwd):$(pwd):ro" \
+        --env "VAULT_IMAGE=${VAULT_IMAGE}" \
+        --workdir "$(pwd)" \
+        ${MOLECULE_IMAGE} \
+          molecule test --destroy=never
