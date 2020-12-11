@@ -10,20 +10,6 @@ De volgende parameters moeten worden meegegeven:
 * `vault_root_token`  
   Token met admin rechten om policies en andere tokens te kunnen aanmaken.
 
-## RACI Matrix
-
-| Vaults            | Owner        | Users         |
-| ----------------- | ------------ | ------------- |
-| Infra vault       | Windows Team | IAM           |
-| Downstream vaults | Aanvrager    | Product Teams |
-
-| Procedure                       | Windows Team | IAM | AMS | Aanvrager | Product Teams |
-| ------------------------------- |:------------:|:---:|:---:|:---------:|:-------------:|
-| Unseal infra vault              | RAI          | ACI |     |           |               |
-| Unseal downstream vault         |              | ACI | C   | RAI       | I             |
-| Infra vault configuration       |              | RAI | C   |           |               |
-| Downstream vaults configuration |              | AC  | C   | RAI       | I             |
-
 # Development
 
 Dependencies:
@@ -38,7 +24,7 @@ Om op de hashicorp-infra-role te ontwikkelen, zijn er verschillende stappen die 
 2. Ontwikkel de ansible tasks
 3. Draai de molecule test lokaal.
 
-### 1. Schrijf een pytest
+### 1. Schrijf een pytest (deprecated)
 
 De eerste stap is testen schrijven, zodat dit reflecteerd wat je zou willen.  
 Deze testen zijn te vinden in deze repo, onder: `molecule/default/tests`  

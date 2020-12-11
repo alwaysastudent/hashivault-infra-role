@@ -1,5 +1,6 @@
 ---
-# Should only run these tasks in a molecule test
+# This is for the molecule pytests and should not run outside a test
+# if you know a better way to persist the token to the tests, please update..
 # Will persist the tokens to local ansible facts so they may be picked up in pytest and side_effect.yml
 - name: Note ip address
   command: hostname -i

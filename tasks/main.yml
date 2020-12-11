@@ -17,17 +17,15 @@
       display_name: "auto_unseal_{{ item }}"
       policies: ["{{ item }}"]
       renewable: True
-      ttl: 720h
+      ttl: 8640h
     tags:
     # this task always changes, which is expected behaviour because it should always create a new token
     - molecule-idempotence-notest
     loop: "{{ vault_autounseal_endpoints }}"
     register: cps2_unseal_tokens
 
-  # This is for the molecule pytests and should not run outside a test
-  # if you know a better way to persist the token to the tests, please update..
   - include_tasks:
       file: token_exporter/{{ vault_autounseal_token_exporter | default('debuglog') }}.yml
     tags:
-    # the whole goal is to create a side-effect.. No need to test idempotency here
+    # the goal is to create an always-changed-side-effect.. Skip idempotency test
     - molecule-idempotence-notest

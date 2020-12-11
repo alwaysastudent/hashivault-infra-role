@@ -16,9 +16,6 @@ platforms:
   published_ports:
   - "0.0.0.0:8200:8200"
   env:
-    http_proxy: "${http_proxy}"
-    https_proxy: "${https_proxy}"
-    no_proxy: "localhost,127.0.0.1,vault_infra,vault_k8s,172.,192.168.,10."
     VAULT_LOCAL_CONFIG: |-
       {
         "backend": {
@@ -27,7 +24,7 @@ platforms:
           }
         },
         "default_lease_ttl": "1h",
-        "max_lease_ttl": "1h",
+        "max_lease_ttl": "8640h",
         "listener": {
           "tcp": {
             "address": "0.0.0.0:8200",
@@ -44,11 +41,9 @@ platforms:
   - "8200"
   published_ports:
   - "0.0.0.0:8201:8200"
-  env:
-    http_proxy: "${http_proxy}"
-    https_proxy: "${https_proxy}"
-    no_proxy: "localhost,127.0.0.1,vault_infra,vault_k8s,172.,192.168.,10."
   image: ${VAULT_IMAGE}
+  # using a sleep until the config file appears (see side_effect.yml)
+  # because we will only know the auto-unseal config after the role was run on vault_infra
   command: |
     sh -c 'while sleep 1; do \
       [ -f /config.hcl ] && /usr/local/bin/docker-entrypoint.sh server -config=/config.hcl; \
@@ -68,7 +63,9 @@ provisioner:
       vault_infra:
         molecule_test: True
         vault_infra_addr: ${VAULT_ADDR}
-        vault_autounseal_token_exporter: molecule
+        # what exporter should be used (where to store generated tokens)
+        # "hostfact" (see /tasks/token_exporter/hostfact.yml) is required for the pytests and side_effect.yml to work
+        vault_autounseal_token_exporter: hostfact
         vault_autounseal_endpoints:
         - k8s
         - k8s_two

@@ -4,20 +4,7 @@ import hvac
 from hvac.exceptions import VaultError
 import testinfra.utils.ansible_runner
 
-vault_host_ports={}
-vault_host_ports['vault_infra'] = 8200
-vault_host_ports['vault_k8s'] = 8201
-
 vault_runner = testinfra.utils.ansible_runner.AnsibleRunner(os.environ['MOLECULE_INVENTORY_FILE'])
-vault_host_ips = {}
-for host in vault_runner.get_hosts():
-  vault_host = vault_runner.get_host(host)
-  vault_host_ips[host] = vault_host.backend.run('hostname -i').stdout.rstrip('\n')
-
-vault_host_ips['localhost'] = 'localhost'
-vault_host_ips['127.0.0.1'] = '127.0.0.1'
-vault_host_ips['VAULT_ADDR'] = os.getenv('VAULT_ADDR', '127.0.0.1')
-os.environ['no_proxy'] = ",".join(vault_host_ips.values())
 
 class VaultResult():
 
@@ -46,10 +33,8 @@ class VaultResult():
 
 
 class VaultSession():
-  def __init__(self, host, port=8200):
-    self.client = hvac.Client(
-      url=f"http://{host}:{port}"
-    )
+  def __init__(self, url):
+    self.client = hvac.Client(url=url)
 
   def login(self, user, password):
     self.client.auth_userpass(user, password)
@@ -85,7 +70,7 @@ class VaultSession():
       return VaultResult.create_result(output)
     except VaultError as output:
       return VaultResult.create_error(output)
-	
+
   def delete(self, path):
     try:
       output = self.client.secrets.kv.v1.delete_secret(
@@ -117,30 +102,7 @@ class VaultSession():
       return VaultResult.create_error(output)
 
 
-@pytest.fixture(
-  scope="module"
-)
+# supplies a VaultSession to the test fixture, expecting url in the request.param
+@pytest.fixture(scope="module")
 def vault(request):
-  user = "none"
-  host = request.param
-  if '@' in host:
-    user = request.param.split('@')[0]
-    host = request.param.split('@')[1]
-
-  if not host in vault_host_ips.keys():
-    raise ValueError(f'unsupported vault host: {host}')
-
-  if not host in vault_host_ports.keys():
-    raise ValueError(f'unsupported vault ip: {host}')
-
-  session = VaultSession(vault_host_ips['VAULT_ADDR'], vault_host_ports[host])
-  if user == "none":
-    pass
-  elif user == "viewer":
-    session.login("viewer", "password")
-  elif user == "svccps2npo":
-    session.login("svccps2npo", "password")
-  else:
-    raise ValueError(f'unsupported vault account: {account}')
-
-  return session
+  return VaultSession(request.param)

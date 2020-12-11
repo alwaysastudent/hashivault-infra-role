@@ -6,6 +6,8 @@ MAKEFLAGS += --silent
 ACTION='test'
 VAULT_IMAGE="vault:1.5.4"
 MOLECULE_IMAGE="registry.kvk.nl/ams-ansible/molecule:stable"
+
+# find docker host ip address. Default bridge network + exposed ports allow vault servers (in container) to be reachable from the host
 VAULT_ADDR="$(shell ip a | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127' | awk '{print $1}' | head -1)"
 
 .PHONY: help
