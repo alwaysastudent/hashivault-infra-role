@@ -1,0 +1,6 @@
+{
+{% for result in cps2_unseal_tokens.results %}
+  "{{ vault_autounseal_endpoints[loop.index0] }}_unseal_token": "{{ result.token.auth.client_token }}",
+{% endfor %}
+  "ip_address": "{{ cmd_ip_address.stdout }}"
+}

@@ -13,7 +13,7 @@ listener "tcp" {
 }
 
 seal "transit" {
-  address = "http://vault_infra:8200"
+  address = "{{ autounseal_address }}"
   token = "{{ autounseal_token }}"
   disable_renewal = false
   key_name = "{{ autounseal_name }}"

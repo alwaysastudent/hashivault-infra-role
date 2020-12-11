@@ -6,15 +6,6 @@
     VAULT_ADDR: http://127.0.0.1:8200
   vars:
     vault_root_token: "{{ ansible_local['secrets']['vault_root_token'] }}"
-    vault_service_accounts:
-    - name: viewer
-      pass: password
-      policies: default
-    - name: svccps2npo
-      pass: password
-      policies:
-      - token_create
-      - cps2npo
 
   tasks:
   - name: "Import hashicorp infra role"

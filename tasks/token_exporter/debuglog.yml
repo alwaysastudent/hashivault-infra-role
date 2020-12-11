@@ -1,0 +1,7 @@
+---
+- debug:
+    msg: "{{ vault_autounseal_endpoints[token_idx] }} Secret: {{ item.token.auth.client_token }}"
+  loop: "{{ cps2_unseal_tokens.results }}"
+  loop_control:
+    label: token
+    index_var: token_idx

@@ -6,7 +6,6 @@ MAKEFLAGS += --silent
 ACTION='test'
 VAULT_IMAGE="vault:1.5.4"
 MOLECULE_IMAGE="registry.kvk.nl/ams-ansible/molecule:stable"
-HOSTNAME="$(shell hostname -f)"
 VAULT_ADDR="$(shell ip a | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127' | awk '{print $1}' | head -1)"
 
 .PHONY: help
@@ -15,7 +14,8 @@ help:
 
 .PHONY: molecule
 molecule:
-	@echo "Pulling docker images ..."
+	@echo >&2 "Vault address: ${VAULT_ADDR}"
+	@echo >&2 "Pulling docker images ..."
 	@docker pull "${VAULT_IMAGE}" >/dev/null
 	@docker pull "${MOLECULE_IMAGE}" >/dev/null
 	@docker container run \

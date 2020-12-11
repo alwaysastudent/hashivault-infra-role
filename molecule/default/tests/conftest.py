@@ -16,7 +16,7 @@ for host in vault_runner.get_hosts():
 
 vault_host_ips['localhost'] = 'localhost'
 vault_host_ips['127.0.0.1'] = '127.0.0.1'
-vault_host_ips['VAULT_ADDR'] = os.getenv('VAULT_ADDR')
+vault_host_ips['VAULT_ADDR'] = os.getenv('VAULT_ADDR', '127.0.0.1')
 os.environ['no_proxy'] = ",".join(vault_host_ips.values())
 
 class VaultResult():
@@ -129,6 +129,9 @@ def vault(request):
 
   if not host in vault_host_ips.keys():
     raise ValueError(f'unsupported vault host: {host}')
+
+  if not host in vault_host_ports.keys():
+    raise ValueError(f'unsupported vault ip: {host}')
 
   session = VaultSession(vault_host_ips['VAULT_ADDR'], vault_host_ports[host])
   if user == "none":

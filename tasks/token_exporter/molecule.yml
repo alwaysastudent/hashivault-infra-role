@@ -1,0 +1,16 @@
+---
+# Should only run these tasks in a molecule test
+# Will persist the tokens to local ansible facts so they may be picked up in pytest and side_effect.yml
+- name: Note ip address
+  command: hostname -i
+  register: cmd_ip_address
+
+- name: Create facts.d
+  file:
+    path: /etc/ansible/facts.d
+    state: directory
+
+- name: Run facts template
+  template:
+    src: infra_connection.fact.j2
+    dest: /etc/ansible/facts.d/infra_connection.fact

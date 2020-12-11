@@ -1,20 +1,33 @@
 ---
-- name: "Prepare tasks"
-  environment:
+- environment:
     VAULT_TOKEN: "{{ vault_root_token }}"
   block:
-  - name: "Include prepare tasks"
-    include_tasks: prepare.yml
+  - name: "Ensure secret engine"
+    hashivault_secret_engine:
+      name: transit
 
-- name: "Ensure admin token is used"
-  assert:
-    that:
-    - vault_admin_token is defined
-    - vault_admin_token != vault_root_token
+  - include_tasks:
+      file: auto_unseal.yml
+    vars:
+      autounseal_name: "{{ item }}"
+    loop: "{{ vault_autounseal_endpoints }}"
 
-- name: "Configure tasks"
-  environment:
-    VAULT_TOKEN: "{{ vault_admin_token }}"
-  block:
-  - name: "Include configure tasks"
-    include_tasks: configure.yml
+  - name: "Create long-lived unseal token"
+    hashivault_token_create:
+      display_name: "auto_unseal_{{ item }}"
+      policies: ["{{ item }}"]
+      renewable: True
+      ttl: 720h
+    tags:
+    # this task always changes, which is expected behaviour because it should always create a new token
+    - molecule-idempotence-notest
+    loop: "{{ vault_autounseal_endpoints }}"
+    register: cps2_unseal_tokens
+
+  # This is for the molecule pytests and should not run outside a test
+  # if you know a better way to persist the token to the tests, please update..
+  - include_tasks:
+      file: token_exporter/{{ vault_autounseal_token_exporter | default('debuglog') }}.yml
+    tags:
+    # the whole goal is to create a side-effect.. No need to test idempotency here
+    - molecule-idempotence-notest

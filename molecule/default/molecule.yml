@@ -18,7 +18,7 @@ platforms:
   env:
     http_proxy: "${http_proxy}"
     https_proxy: "${https_proxy}"
-    no_proxy: "localhost,127.0.0.1,vault_infra,vault_k8s,172.,192.168."
+    no_proxy: "localhost,127.0.0.1,vault_infra,vault_k8s,172.,192.168.,10."
     VAULT_LOCAL_CONFIG: |-
       {
         "backend": {
@@ -38,8 +38,6 @@ platforms:
       }
   privileged: True
   pre_build_image: True
-  networks:
-  - name: vault
 - name: vault_k8s
   hostname: vault_k8s
   exposed_ports:
@@ -49,7 +47,7 @@ platforms:
   env:
     http_proxy: "${http_proxy}"
     https_proxy: "${https_proxy}"
-    no_proxy: "localhost,127.0.0.1,vault_infra,vault_k8s,172.,192.168."
+    no_proxy: "localhost,127.0.0.1,vault_infra,vault_k8s,172.,192.168.,10."
   image: ${VAULT_IMAGE}
   command: |
     sh -c 'while sleep 1; do \
@@ -58,8 +56,6 @@ platforms:
     done'
   privileged: True
   pre_build_image: True
-  networks:
-  - name: vault
 provisioner:
   name: ansible
   lint:
@@ -70,7 +66,15 @@ provisioner:
   inventory:
     host_vars:
       vault_infra:
+        molecule_test: True
+        vault_infra_addr: ${VAULT_ADDR}
+        vault_autounseal_token_exporter: molecule
+        vault_autounseal_endpoints:
+        - k8s
+        - k8s_two
       vault_k8s:
+        molecule_test: True
+        vault_infra_addr: ${VAULT_ADDR}
 scenario:
   name: default
   create_sequence:

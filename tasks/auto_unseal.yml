@@ -4,20 +4,23 @@
     that:
     - autounseal_name is defined
 
+# Todo: Check if exists and don't overwrite if it does
 - name: "autounseal({{ autounseal_name }}): Ensure transit key"
   hashivault_write:
     mount_point: "transit"
     secret: "keys/{{ autounseal_name }}"
-  changed_when: False
+  tags:
+  # This should be removed. See todo above
+  - molecule-idempotence-notest
 
 - name: "autounseal({{ autounseal_name }}): Ensure policy"
   hashivault_policy:
     name: "{{ autounseal_name }}"
     rules: |
       path "transit/encrypt/{{ autounseal_name }}" {
-         capabilities = [ "update" ]
+        capabilities = [ "update" ]
       }
 
       path "transit/decrypt/{{ autounseal_name }}" {
-         capabilities = [ "update" ]
+        capabilities = [ "update" ]
       }

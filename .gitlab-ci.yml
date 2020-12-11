@@ -11,7 +11,9 @@ molecule:
   script:
     - |
       : "molecule test"
-      echo "Pulling docker images ..."
+      VAULT_ADDR="$(nslookup docker 2>/dev/null | awk '/Address/ {print $3}')"
+      echo >&2 "Vault address: ${VAULT_ADDR}"
+      echo >&2 "Pulling docker images ..."
       docker pull "${VAULT_IMAGE}" >/dev/null
       docker pull "${MOLECULE_IMAGE}" >/dev/null
       docker network create vault
@@ -22,6 +24,7 @@ molecule:
         --volume /var/run/docker.sock:/var/run/docker.sock \
         --volume "$(pwd):$(pwd):ro" \
         --env "VAULT_IMAGE=${VAULT_IMAGE}" \
+        --env "VAULT_ADDR=${VAULT_ADDR}" \
         --workdir "$(pwd)" \
         ${MOLECULE_IMAGE} \
           molecule test --destroy=never

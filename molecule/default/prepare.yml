@@ -23,7 +23,7 @@
   environment:
     VAULT_ADDR: http://127.0.0.1:8200
   tasks:
-  - name: "Read ansible status"
+  - name: "Read vault status"
     hashivault_status:
     register: hashivault_status
 
@@ -48,6 +48,6 @@
     hashivault_unseal:
       keys: "{{ item }}"
     register: hashivault_status
-    loop: "{{ ansible_facts['ansible_local']['secrets']['vault_init_keys'] }}"
+    loop: "{{ ansible_local['secrets']['vault_init_keys'] }}"
     when: hashivault_status.status.sealed
     no_log: True
